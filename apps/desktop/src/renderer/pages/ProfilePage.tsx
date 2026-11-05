@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   User,
@@ -12,6 +12,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { useAuth } from '../context/AuthContext';
 
 interface ContextType {
   userPlan: 'free' | 'premium';
@@ -20,16 +21,29 @@ interface ContextType {
 
 export const ProfilePage: React.FC = () => {
   const { userPlan } = useOutletContext<ContextType>();
-  const [firstName, setFirstName] = useState('Alex');
-  const [lastName, setLastName] = useState('Vance');
+  const { user, updateProfile, logout } = useAuth();
+
+  const [firstName, setFirstName] = useState(user?.firstName || 'Alex');
+  const [lastName, setLastName] = useState(user?.lastName || 'Vance');
   const [saved, setSaved] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName);
+      setLastName(user.lastName);
+    }
+  }, [user]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) return;
+    await updateProfile({ firstName, lastName });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  const initials = `${firstName[0] || 'U'}${lastName[0] || ''}`;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-in fade-in duration-300">
@@ -37,8 +51,7 @@ export const ProfilePage: React.FC = () => {
       <Card className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="w-16 h-16 rounded-2xl bg-graphite border-2 border-cyanBrand/40 flex items-center justify-center font-mono font-bold text-xl text-cyanBrand shadow-cyan-glow">
-            {firstName[0]}
-            {lastName[0]}
+            {initials}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -49,7 +62,7 @@ export const ProfilePage: React.FC = () => {
                 {userPlan === 'premium' ? 'Pro Member' : 'Free Tier'}
               </Badge>
             </div>
-            <p className="text-xs text-textMuted font-mono mt-0.5">alex.vance@example.com</p>
+            <p className="text-xs text-textMuted font-mono mt-0.5">{user?.email || 'alex.vance@example.com'}</p>
           </div>
         </div>
 
@@ -77,6 +90,7 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                required
                 className="w-full bg-obsidian border border-slateBorder rounded-lg px-3 py-2 text-xs font-sans text-textMain focus:outline-none focus:border-cyanBrand"
               />
             </div>
@@ -86,6 +100,7 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
+                required
                 className="w-full bg-obsidian border border-slateBorder rounded-lg px-3 py-2 text-xs font-sans text-textMain focus:outline-none focus:border-cyanBrand"
               />
             </div>
@@ -93,7 +108,7 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-xs font-mono text-textMuted mb-1">Email Address</label>
               <div className="flex items-center bg-obsidian border border-slateBorder rounded-lg px-3 py-2 text-xs font-mono text-textMuted select-none">
                 <Mail className="w-3.5 h-3.5 mr-2" />
-                alex.vance@example.com
+                {user?.email || 'alex.vance@example.com'}
               </div>
             </div>
             <Button variant="secondary" size="sm" type="submit" className="w-full">
@@ -126,7 +141,7 @@ export const ProfilePage: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-textMuted">Account ID:</span>
-                <span className="text-cyanBrand font-mono">usr_9f4b7a1e2d</span>
+                <span className="text-cyanBrand font-mono">{user?.id || 'usr_demo'}</span>
               </div>
             </div>
           </Card>
@@ -164,7 +179,10 @@ export const ProfilePage: React.FC = () => {
           <Button
             variant="danger"
             size="sm"
-            onClick={() => setLogoutModalOpen(false)}
+            onClick={async () => {
+              setLogoutModalOpen(false);
+              await logout();
+            }}
           >
             Confirm Sign Out
           </Button>

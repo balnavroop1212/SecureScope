@@ -10,11 +10,12 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["../../packages/shared/src/*"]
+      "@shared/*": ["src/shared/*"]
     }
   },
   "include": [
     "src/main/**/*",
-    "src/preload/**/*"
+    "src/preload/**/*",
+    "src/shared/**/*"
   ]
 }

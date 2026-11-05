@@ -18,11 +18,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/*"],
-      "@shared/*": ["../../packages/shared/src/*"]
+      "@shared/*": ["src/shared/*"]
     }
   },
   "include": [
     "src/renderer/**/*",
-    "../../packages/shared/src/**/*"
+    "src/shared/**/*"
   ]
 }

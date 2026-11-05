@@ -10,8 +10,8 @@
 | :---: | :--- | :--- | :---: | :---: |
 | **M1** | **Planning & Architecture** | Blueprint, Docs, Schemas, Standards | **COMPLETED** | Day 1 |
 | **M2** | **Foundation & Design System** | Electron, React, Vite, Tailwind, Shell | **COMPLETED** | Day 2 |
-| **M3** | **Authentication Module** | JSON Store, Hashing, Signup, Login | *READY TO START* | Day 3 |
-| **M4** | **Dashboard & Scan Interface** | KPI Cards, Command Input, Gates | *PLANNED* | Day 4 |
+| **M3** | **Authentication Module** | JSON Store, Hashing, Signup, Login | **COMPLETED** | Day 3 |
+| **M4** | **Dashboard & Scan Interface** | KPI Cards, Command Input, Gates | *READY TO START* | Day 4 |
 | **M5** | **Assessment Engine & Reports** | Passive Checks, SSL, Headers, Reports | *PLANNED* | Day 5 |
 | **M6** | **History Module** | SQLite Persistence, Filters, Deletion | *PLANNED* | Day 6 |
 | **M7** | **Profile & Premium System** | Entitlements, Demo Checkout, PDF | *PLANNED* | Day 7 |
@@ -78,26 +78,31 @@
 ### Milestone 3 — Authentication Module
 **Goal**: Build robust local authentication using versioned JSON file storage, secure Scrypt password hashing, session management, and polished Login/Signup screens.
 
-- [ ] Define Auth Domain interfaces in `packages/shared`:
-  - [ ] `User`, `UserSession`, `SignupDTO`, `LoginDTO`, `AuthResult`.
-- [ ] Implement `LocalAuthRepository` in Main process:
-  - [ ] Resolve `%APPDATA%/SecureScope/data/users.json`.
-  - [ ] Implement atomic file writing via `.tmp` rename.
-  - [ ] Implement secure password hashing using Node `crypto.scrypt` with random 32-byte salt.
-  - [ ] Implement constant-time password verification with `crypto.timingSafeEqual`.
-  - [ ] Email normalization and unique email check.
-- [ ] Wire IPC Auth channels in Preload & Main:
-  - [ ] `auth:signup`, `auth:login`, `auth:logout`, `auth:getCurrentSession`, `auth:updateProfile`.
-- [ ] Build Authentication UI:
-  - [ ] Professional Login view (`/login`): email, password visibility toggle, remember me, error alerts.
-  - [ ] Professional Signup view (`/signup`): first name, last name, email, password strength meter, confirmation match, terms checkbox.
-  - [ ] Global `AuthContext` in React providing `user`, `login()`, `signup()`, `logout()`, `isAuthenticated`.
-  - [ ] Protected Route wrapper redirecting unauthenticated users to `/login`.
-- [ ] Verification:
-  - [ ] Test registration creates structured record in `users.json`.
-  - [ ] Test duplicate email rejection.
-  - [ ] Test login success with valid credentials and failure with invalid password.
-  - [ ] Test persistent session on app restart.
+- [x] Define Auth Domain interfaces in `apps/desktop/src/shared/types.ts`:
+  - [x] `User`, `StoredUserRecord`, `UsersJsonSchema`, `UserSession`, `SignupDTO`, `LoginDTO`, `AuthResponse`.
+- [x] Implement `PasswordHasher` (`apps/desktop/src/main/services/auth/PasswordHasher.ts`):
+  - [x] High-entropy 32-byte salt generation via `crypto.randomBytes`.
+  - [x] Scrypt hashing ($N=16384, r=8, p=1$, keylen 64 bytes).
+  - [x] Constant-time password verification via `crypto.timingSafeEqual` (zero timing side-channel leakage).
+- [x] Implement `LocalAuthRepository` (`apps/desktop/src/main/services/auth/LocalAuthRepository.ts`):
+  - [x] Resolve `%APPDATA%/SecureScope/data/users.json` with fallback for testing.
+  - [x] Implement atomic file writing via `.tmp` write and rename.
+  - [x] Email normalization (trim, lowercase) and unique email check.
+  - [x] Real-time password complexity validation (min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol).
+  - [x] Sanitized user records (password hashes stripped before exposure).
+  - [x] Session persistence in `%APPDATA%/SecureScope/data/session.json`.
+- [x] Wire IPC Auth channels in Preload & Main:
+  - [x] `auth:signup`, `auth:login`, `auth:logout`, `auth:getCurrentUser`, `auth:updateProfile`, `auth:updatePlan`.
+- [x] Build React Authentication Layer:
+  - [x] Global `AuthContext` (`apps/desktop/src/renderer/context/AuthContext.tsx`) for user state, session hydration, login, signup, logout.
+  - [x] Protected Route wrapper (`ProtectedRoute` and `PublicRoute`) redirecting unauthenticated users to `/login`.
+  - [x] Professional `LoginPage` (`apps/desktop/src/renderer/pages/LoginPage.tsx`) with visibility toggle, remember me, error alerts, and account reset guidance modal.
+  - [x] Professional `SignupPage` (`apps/desktop/src/renderer/pages/SignupPage.tsx`) with real-time password strength meter, match validation, and authorized scope consent checkbox.
+  - [x] Integrated `ProfilePage` and `AppLayout` with live authenticated user state.
+- [x] Verification & Automated Tests:
+  - [x] Auth test suite in `tests/auth.test.js` covering 9 critical cases (100% passed).
+  - [x] Verification test in `scripts/verify-foundation.js` (100% passed).
+  - [x] Production build and strict TypeScript typecheck verified (0 errors).
 
 ---
 

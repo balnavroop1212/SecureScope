@@ -14,6 +14,7 @@ import {
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { useAuth } from '../context/AuthContext';
 
 interface ContextType {
   isDemoMode: boolean;
@@ -23,6 +24,7 @@ interface ContextType {
 
 export const DashboardPage: React.FC = () => {
   const { isDemoMode, userPlan } = useOutletContext<ContextType>();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -32,7 +34,7 @@ export const DashboardPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold text-textMain tracking-tight">
-              Welcome back, Alex
+              Welcome back, {user?.firstName || 'Operator'}
             </h2>
             <Badge variant={userPlan === 'premium' ? 'premium' : 'free'}>
               {userPlan === 'premium' ? 'Pro Member' : 'Community'}
@@ -228,3 +230,4 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 };
+

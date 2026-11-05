@@ -9,7 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src/renderer'),
-      '@shared': path.resolve(__dirname, '../../packages/shared/src'),
+      '@shared': path.resolve(__dirname, 'src/shared'),
     },
   },
   server: {

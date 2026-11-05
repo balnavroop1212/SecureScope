@@ -1,7 +1,10 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
+import { LocalAuthRepository } from './services/auth/LocalAuthRepository';
+import type { SignupDTO, LoginDTO, UserPlan } from '@shared/types';
 
 let mainWindow: BrowserWindow | null = null;
+const authRepo = new LocalAuthRepository();
 
 const isDev =
   (process.env.NODE_ENV === 'development' || !app.isPackaged) &&
@@ -86,6 +89,38 @@ ipcMain.handle('app:getInfo', async () => {
     platform: process.platform,
     isPackaged: app.isPackaged,
   };
+});
+
+// Authentication IPC handlers
+ipcMain.handle('auth:signup', async (_event, data: SignupDTO) => {
+  return authRepo.register(data);
+});
+
+ipcMain.handle('auth:login', async (_event, data: LoginDTO) => {
+  return authRepo.login(data);
+});
+
+ipcMain.handle('auth:getCurrentUser', async () => {
+  return authRepo.getCurrentUser();
+});
+
+ipcMain.handle(
+  'auth:updateProfile',
+  async (_event, updates: { firstName?: string; lastName?: string }) => {
+    const session = await authRepo.getCurrentSession();
+    if (!session) throw new Error('Unauthenticated');
+    return authRepo.updateProfile(session.userId, updates);
+  }
+);
+
+ipcMain.handle('auth:updatePlan', async (_event, plan: UserPlan) => {
+  const session = await authRepo.getCurrentSession();
+  if (!session) throw new Error('Unauthenticated');
+  return authRepo.updatePlan(session.userId, plan);
+});
+
+ipcMain.handle('auth:logout', async () => {
+  await authRepo.clearSession();
 });
 
 // App lifecycle

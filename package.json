@@ -11,6 +11,8 @@
     "build:electron": "tsc -p apps/desktop/tsconfig.electron.json",
     "build": "npm run build:electron && npm run build:renderer",
     "test:foundation": "node scripts/verify-foundation.js",
+    "test:auth": "node tests/auth.test.js",
+    "test": "npm run test:foundation && npm run test:auth",
     "package": "npm run build && electron-builder",
     "typecheck": "tsc --noEmit -p apps/desktop/tsconfig.renderer.json && tsc --noEmit -p apps/desktop/tsconfig.electron.json"
   },
