@@ -16,3 +16,4 @@ if (fs.existsSync(compiledPath)) {
   process.stderr.write(`SecureScope Native Host: compiled service not found at ${compiledPath}. Please run npm run build first.\n`);
   process.exit(1);
 }
+

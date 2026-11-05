@@ -93,3 +93,4 @@ if (!fs.existsSync(assetsDir)) {
   fs.writeFileSync(filePath, iconBuffer);
   console.log(`Generated icon: ${filePath} (${iconBuffer.length} bytes)`);
 });
+

@@ -255,3 +255,4 @@ SecureScope/
 ## 10. Ethical & Legal Disclaimer
 
 SecureScope is strictly developed for **authorized educational assessments, defensive configuration auditing, and site owners evaluating their own web properties**. Users must ensure they have explicit, written authorization before assessing any third-party infrastructure. The authors assume no liability for misuse.
+

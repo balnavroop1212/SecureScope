@@ -263,3 +263,4 @@ export class PdfGeneratorService {
     return '#dc2626';
   }
 }
+
