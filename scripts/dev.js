@@ -5,6 +5,17 @@ const http = require('http');
 let viteProcess = null;
 let electronProcess = null;
 
+function runCmd(cmd, args, options = {}) {
+  const isWin = process.platform === 'win32';
+  const executable = isWin ? 'cmd.exe' : cmd;
+  const commandArgs = isWin ? ['/c', cmd, ...args] : args;
+
+  return spawn(executable, commandArgs, {
+    stdio: 'inherit',
+    ...options,
+  });
+}
+
 function waitForViteServer(url, timeout = 30000) {
   const startTime = Date.now();
   return new Promise((resolve, reject) => {
@@ -36,11 +47,7 @@ function waitForViteServer(url, timeout = 30000) {
 
 async function start() {
   console.log('[Dev] Compiling Electron main and preload scripts...');
-  const tsc = spawn(
-    process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['tsc', '-p', 'apps/desktop/tsconfig.electron.json'],
-    { stdio: 'inherit' }
-  );
+  const tsc = runCmd('npx', ['tsc', '-p', 'apps/desktop/tsconfig.electron.json']);
 
   await new Promise((resolve, reject) => {
     tsc.on('close', (code) => {
@@ -50,11 +57,7 @@ async function start() {
   });
 
   console.log('[Dev] Starting Vite dev server...');
-  viteProcess = spawn(
-    process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['vite', '--config', 'apps/desktop/vite.config.ts'],
-    { stdio: 'inherit' }
-  );
+  viteProcess = runCmd('npx', ['vite', '--config', 'apps/desktop/vite.config.ts']);
 
   await waitForViteServer('http://localhost:5173');
   console.log('[Dev] Vite dev server ready on http://localhost:5173');
@@ -63,14 +66,9 @@ async function start() {
   const electronEnv = { ...process.env, NODE_ENV: 'development' };
   delete electronEnv.ELECTRON_RUN_AS_NODE;
 
-  electronProcess = spawn(
-    process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['electron', '.'],
-    {
-      stdio: 'inherit',
-      env: electronEnv,
-    }
-  );
+  electronProcess = runCmd('npx', ['electron', '.'], {
+    env: electronEnv,
+  });
 
   electronProcess.on('close', (code) => {
     console.log(`[Dev] Electron exited with code ${code}`);
@@ -83,7 +81,7 @@ function cleanup() {
   if (viteProcess) {
     try {
       if (process.platform === 'win32') {
-        spawn('taskkill', ['/pid', viteProcess.pid.toString(), '/f', '/t']);
+        runCmd('taskkill', ['/pid', viteProcess.pid.toString(), '/f', '/t'], { stdio: 'ignore' });
       } else {
         viteProcess.kill();
       }
