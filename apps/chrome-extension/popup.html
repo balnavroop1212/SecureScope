@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureScope Companion</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="extension-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-group">
+        <div class="logo-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <circle cx="12" cy="11" r="3"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="logo-title">SecureScope</h1>
+          <span class="logo-subtitle">Companion</span>
+        </div>
+      </div>
+      <div id="connection-badge" class="badge badge-loading">
+        <span class="badge-dot"></span>
+        <span id="connection-status-text">Checking Host...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content">
+      <!-- Target Site Card -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-label">ACTIVE TARGET URL</span>
+          <span id="target-scheme-badge" class="badge-subtle">HTTPS</span>
+        </div>
+        <div class="url-input-container">
+          <input 
+            type="text" 
+            id="target-url-input" 
+            class="url-input" 
+            placeholder="https://example.com"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <p id="target-warning" class="warning-text" style="display: none;"></p>
+      </section>
+
+      <!-- Scan Configuration -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-label">ASSESSMENT MODE</span>
+        </div>
+        <div class="mode-grid">
+          <label class="mode-option active" data-mode="normal">
+            <input type="radio" name="scan-mode" value="normal" checked>
+            <div class="mode-title">Normal</div>
+            <div class="mode-desc">Standard passive analysis</div>
+          </label>
+          <label class="mode-option" data-mode="aggressive">
+            <input type="radio" name="scan-mode" value="aggressive">
+            <div class="mode-title">Aggressive</div>
+            <div class="mode-desc">In-depth metadata checks</div>
+          </label>
+          <label class="mode-option" data-mode="private">
+            <input type="radio" name="scan-mode" value="private">
+            <div class="mode-title">Private</div>
+            <div class="mode-desc">Redacted evidence mode</div>
+          </label>
+        </div>
+      </section>
+
+      <!-- Scope Consent -->
+      <div class="consent-container">
+        <label class="consent-label">
+          <input type="checkbox" id="consent-checkbox" class="checkbox">
+          <span>I confirm authorized educational or website ownership scope.</span>
+        </label>
+      </div>
+
+      <!-- Action Button -->
+      <div class="action-container">
+        <button id="scan-button" class="btn btn-primary" disabled>
+          <span id="scan-btn-spinner" class="spinner" style="display: none;"></span>
+          <span id="scan-btn-text">Assess Website</span>
+        </button>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="alert-box" class="alert" style="display: none;"></div>
+
+      <!-- Scan Results Summary -->
+      <section id="results-card" class="card results-card" style="display: none;">
+        <div class="results-header">
+          <div>
+            <span class="card-label">ASSESSMENT RESULT</span>
+            <div class="results-meta" id="results-domain">example.com</div>
+          </div>
+          <div id="results-score-badge" class="score-badge">92 / A</div>
+        </div>
+
+        <div class="severity-pills">
+          <div class="sev-pill sev-critical"><span class="sev-count" id="sev-crit-count">0</span> Crit</div>
+          <div class="sev-pill sev-high"><span class="sev-count" id="sev-high-count">0</span> High</div>
+          <div class="sev-pill sev-med"><span class="sev-count" id="sev-med-count">0</span> Med</div>
+          <div class="sev-pill sev-low"><span class="sev-count" id="sev-low-count">0</span> Low</div>
+        </div>
+
+        <p id="results-summary-text" class="results-summary"></p>
+
+        <div class="results-footer">
+          <span class="text-hint">Full technical report saved in SecureScope Desktop</span>
+        </div>
+      </section>
+
+      <!-- Troubleshooting Info -->
+      <div id="host-troubleshoot" class="troubleshoot-box" style="display: none;">
+        <div class="troubleshoot-title">Desktop Connection Required</div>
+        <p class="troubleshoot-desc">
+          Ensure SecureScope Desktop is open and the native messaging host is registered:
+        </p>
+        <code class="troubleshoot-code">npm run register:extension</code>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span class="footer-text">SecureScope v1.0.0</span>
+      <span id="user-plan-label" class="footer-plan">Checking account...</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

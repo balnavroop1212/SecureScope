@@ -14,8 +14,11 @@
     "test:auth": "node tests/auth.test.js",
     "test:scanner": "node tests/scanner.test.js",
     "test:premium": "node tests/premium-history.test.js",
-    "test": "npm run test:foundation && npm run test:auth && npm run test:scanner && npm run test:premium",
-    "package": "npm run build && electron-builder",
+    "test:extension": "node tests/extension.test.js",
+    "test": "npm run test:foundation && npm run test:auth && npm run test:scanner && npm run test:premium && npm run test:extension",
+    "register:extension": "node scripts/register-extension.js",
+    "package": "npm run build && electron-builder --dir",
+    "package:installer": "npm run build && electron-builder --win nsis",
     "typecheck": "tsc --noEmit -p apps/desktop/tsconfig.renderer.json && tsc --noEmit -p apps/desktop/tsconfig.electron.json"
   },
   "dependencies": {
@@ -44,5 +47,35 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^6.0.7"
+  },
+  "build": {
+    "appId": "com.securescope.desktop",
+    "productName": "SecureScope",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "node_modules/sql.js/dist/sql-wasm.wasm",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SecureScope"
+    }
   }
 }

@@ -37,6 +37,33 @@ declare global {
         deleteScan: (scanId: string) => Promise<boolean>;
         exportPdf: (scanId: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
       };
+      extension: {
+        getStatus: () => Promise<{
+          isWindows: boolean;
+          manifestExists: boolean;
+          batExists: boolean;
+          registryKeyExists: boolean;
+          isFullyConfigured: boolean;
+          hostDir: string;
+          manifestPath: string;
+          batPath: string;
+          hostId: string;
+          userPlan: UserPlan;
+          canUseExtension: boolean;
+        }>;
+        registerHost: (extensionId?: string) => Promise<{
+          success: boolean;
+          hostDir: string;
+          manifestPath: string;
+          batPath: string;
+          registryStatus: string;
+        }>;
+        testEcho: (payload: any) => Promise<{
+          success: boolean;
+          roundTripBytes: number;
+          decoded: any;
+        }>;
+      };
     };
   }
 }

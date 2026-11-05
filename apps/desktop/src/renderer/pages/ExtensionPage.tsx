@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   Puzzle,
@@ -8,6 +8,11 @@ import {
   Activity,
   Copy,
   Check,
+  RefreshCw,
+  ShieldCheck,
+  AlertCircle,
+  ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -17,15 +22,92 @@ interface ContextType {
   userPlan: 'free' | 'premium';
 }
 
+interface ExtensionHostStatus {
+  isWindows: boolean;
+  manifestExists: boolean;
+  batExists: boolean;
+  registryKeyExists: boolean;
+  isFullyConfigured: boolean;
+  hostDir: string;
+  manifestPath: string;
+  batPath: string;
+  hostId: string;
+  userPlan: 'free' | 'premium';
+  canUseExtension: boolean;
+}
+
 export const ExtensionPage: React.FC = () => {
   const { userPlan } = useOutletContext<ContextType>();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [testingEcho, setTestingEcho] = useState(false);
+  const [extensionIdInput, setExtensionIdInput] = useState('');
+  const [echoResult, setEchoResult] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [status, setStatus] = useState<ExtensionHostStatus | null>(null);
+
+  const loadStatus = async () => {
+    try {
+      setLoading(true);
+      const res = await window.electronAPI.extension.getStatus();
+      setStatus(res);
+    } catch (err: any) {
+      console.error('Failed to load extension host status:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStatus();
+  }, []);
 
   const copyRegCommand = () => {
     navigator.clipboard.writeText('npm run register:extension');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRegister = async () => {
+    try {
+      setRegistering(true);
+      setActionMessage(null);
+      const res = await window.electronAPI.extension.registerHost(extensionIdInput.trim() || undefined);
+      setActionMessage({
+        type: 'success',
+        text: `Native Host successfully configured! ${res.registryStatus}`,
+      });
+      await loadStatus();
+    } catch (err: any) {
+      setActionMessage({
+        type: 'error',
+        text: `Registration failed: ${err.message}`,
+      });
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  const handleTestEcho = async () => {
+    try {
+      setTestingEcho(true);
+      setEchoResult(null);
+      const startTime = performance.now();
+      const res = await window.electronAPI.extension.testEcho({
+        action: 'ECHO_TEST',
+        client: 'SecureScope Desktop UI',
+        timestamp: Date.now(),
+      });
+      const latency = Math.round(performance.now() - startTime);
+      setEchoResult(`Wire protocol verified: ${res.roundTripBytes} bytes framed cleanly in ${latency}ms.`);
+    } catch (err: any) {
+      setEchoResult(`Echo test failed: ${err.message}`);
+    } finally {
+      setTestingEcho(false);
+    }
   };
 
   return (
@@ -44,11 +126,43 @@ export const ExtensionPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="neutral" withDot>
-            Host: Initializing in M8
-          </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={loadStatus}
+            disabled={loading}
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
+          >
+            Refresh Status
+          </Button>
+          {status?.isFullyConfigured ? (
+            <Badge variant="success" withDot>
+              Host: Registered & Ready
+            </Badge>
+          ) : (
+            <Badge variant="medium" withDot>
+              Host: Setup Required
+            </Badge>
+          )}
         </div>
       </div>
+
+      {actionMessage && (
+        <div
+          className={`p-4 rounded-xl text-sm flex items-center gap-3 border ${
+            actionMessage.type === 'success'
+              ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-300'
+              : 'bg-red-950/30 border-red-800/50 text-red-300'
+          }`}
+        >
+          {actionMessage.type === 'success' ? (
+            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          )}
+          <span>{actionMessage.text}</span>
+        </div>
+      )}
 
       {userPlan === 'free' ? (
         /* Free Tier Upgrade Gate */
@@ -77,24 +191,33 @@ export const ExtensionPage: React.FC = () => {
       ) : (
         /* Premium Setup Guide & Management */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Step-by-Step Installation */}
           <Card className="space-y-4">
-            <h4 className="text-sm font-semibold text-textMain flex items-center gap-2">
-              <Layers className="w-4 h-4 text-cyanBrand" />
-              Installation Instructions
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-textMain flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyanBrand" />
+                Step-by-Step Chrome Setup
+              </h4>
+              <Badge variant="premium">Manifest V3</Badge>
+            </div>
+
             <ol className="space-y-3 text-xs text-textMuted list-decimal list-inside leading-relaxed font-sans">
               <li>
                 Open Google Chrome and navigate to{' '}
-                <span className="font-mono text-cyanBrand">chrome://extensions</span>.
+                <span className="font-mono text-cyanBrand select-all">chrome://extensions</span>.
               </li>
-              <li>Toggle <strong>Developer Mode</strong> in the top-right corner.</li>
+              <li>
+                Toggle the <strong>Developer mode</strong> switch in the top-right corner.
+              </li>
               <li>
                 Click <strong>Load unpacked</strong> and select the directory:
-                <div className="mt-1 p-2 rounded bg-obsidian border border-slateBorder font-mono text-[11px] text-textMain">
-                  &lt;SecureScope&gt;\apps\chrome-extension
+                <div className="mt-1 p-2.5 rounded-lg bg-obsidian border border-slateBorder font-mono text-[11px] text-textMain select-all break-all">
+                  &lt;ProjectRoot&gt;\apps\chrome-extension
                 </div>
               </li>
-              <li>Register the desktop Native Messaging host in the Windows Registry.</li>
+              <li>
+                Register the desktop Native Messaging host in the Windows Registry using the button below or via CLI:
+              </li>
             </ol>
 
             <div className="p-3 rounded-lg bg-obsidian border border-slateBorder flex items-center justify-between">
@@ -106,25 +229,93 @@ export const ExtensionPage: React.FC = () => {
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </Button>
             </div>
+
+            <div className="pt-2 border-t border-slateBorder/60 space-y-3">
+              <div className="text-xs text-textMuted">
+                Optional: specify Chrome Extension ID (defaults to all local IDs):
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. pgkjgchmf..."
+                  value={extensionIdInput}
+                  onChange={(e) => setExtensionIdInput(e.target.value)}
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-obsidian border border-slateBorder text-xs text-textMain font-mono focus:border-cyanBrand outline-none"
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleRegister}
+                  disabled={registering}
+                  icon={<Zap className={`w-3.5 h-3.5 ${registering ? 'animate-spin' : ''}`} />}
+                >
+                  {registering ? 'Registering...' : 'Register Host'}
+                </Button>
+              </div>
+            </div>
           </Card>
 
+          {/* Native Diagnostics & Status */}
           <Card className="space-y-4">
-            <h4 className="text-sm font-semibold text-textMain flex items-center gap-2">
-              <Activity className="w-4 h-4 text-cyanBrand" />
-              Native Messaging Status & Diagnostics
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-textMain flex items-center gap-2">
+                <Activity className="w-4 h-4 text-cyanBrand" />
+                Native Messaging Diagnostics
+              </h4>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleTestEcho}
+                disabled={testingEcho}
+                icon={<ExternalLink className="w-3.5 h-3.5" />}
+              >
+                {testingEcho ? 'Testing...' : 'Test Echo'}
+              </Button>
+            </div>
+
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between p-2 rounded bg-obsidian border border-slateBorder">
-                <span className="text-textMuted">Host Protocol:</span>
-                <span className="text-textMain">32-bit Little-Endian stdio</span>
-              </div>
-              <div className="flex justify-between p-2 rounded bg-obsidian border border-slateBorder">
+              <div className="flex justify-between items-center p-2.5 rounded-lg bg-obsidian border border-slateBorder">
                 <span className="text-textMuted">Host ID:</span>
-                <span className="text-cyanBrand">com.securescope.desktop</span>
+                <span className="text-cyanBrand font-semibold">com.securescope.desktop</span>
               </div>
-              <div className="flex justify-between p-2 rounded bg-obsidian border border-slateBorder">
-                <span className="text-textMuted">Status:</span>
-                <span className="text-amber-400">Ready for Host Build (M8)</span>
+
+              <div className="flex justify-between items-center p-2.5 rounded-lg bg-obsidian border border-slateBorder">
+                <span className="text-textMuted">Windows Registry Key:</span>
+                <span className={status?.registryKeyExists ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                  {status?.registryKeyExists ? 'REGISTERED' : 'NOT FOUND'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center p-2.5 rounded-lg bg-obsidian border border-slateBorder">
+                <span className="text-textMuted">Host Manifest File:</span>
+                <span className={status?.manifestExists ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                  {status?.manifestExists ? 'EXISTS' : 'NOT FOUND'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center p-2.5 rounded-lg bg-obsidian border border-slateBorder">
+                <span className="text-textMuted">Batch Launcher Script:</span>
+                <span className={status?.batExists ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                  {status?.batExists ? 'EXISTS' : 'NOT FOUND'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center p-2.5 rounded-lg bg-obsidian border border-slateBorder">
+                <span className="text-textMuted">Wire Framing:</span>
+                <span className="text-textMain">32-bit Little-Endian LE (1MB max)</span>
+              </div>
+            </div>
+
+            {echoResult && (
+              <div className="p-3 rounded-lg bg-obsidian border border-cyanBrand/30 text-xs font-mono text-cyanBrand animate-in fade-in">
+                {echoResult}
+              </div>
+            )}
+
+            <div className="p-3 rounded-lg bg-slateBorder/30 border border-slateBorder text-[11px] text-textMuted space-y-1">
+              <div className="font-semibold text-textMain">Target Host Manifest Location:</div>
+              <div className="font-mono text-cyanBrand/90 select-all break-all">
+                {status?.manifestPath || '%APPDATA%\\SecureScope\\host\\com.securescope.desktop.json'}
               </div>
             </div>
           </Card>

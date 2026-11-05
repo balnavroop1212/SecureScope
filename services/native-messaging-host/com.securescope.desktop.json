@@ -1,0 +1,9 @@
+{
+  "name": "com.securescope.desktop",
+  "description": "SecureScope Desktop Native Messaging Host",
+  "path": "securescope-host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://*/*"
+  ]
+}

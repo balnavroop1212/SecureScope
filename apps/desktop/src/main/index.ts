@@ -5,6 +5,7 @@ import { SQLiteScanRepository } from './services/storage/SQLiteScanRepository';
 import { ScannerEngine } from './services/scanner/ScannerEngine';
 import { EntitlementService } from './services/auth/EntitlementService';
 import { PdfGeneratorService } from './services/pdf/PdfGeneratorService';
+import { ExtensionRegistrationService } from './services/native-host/ExtensionRegistrationService';
 import type { SignupDTO, LoginDTO, UserPlan, ScanMode } from '@shared/types';
 
 let mainWindow: BrowserWindow | null = null;
@@ -208,6 +209,27 @@ ipcMain.handle('reports:exportPdf', async (_event, scanId: string) => {
   if (!report) throw new Error('Report not found');
 
   return PdfGeneratorService.generatePdf(report);
+});
+
+// Companion Chrome Extension IPC handlers
+ipcMain.handle('extension:getStatus', async () => {
+  const user = await authRepo.getCurrentUser();
+  const baseStatus = ExtensionRegistrationService.getStatus();
+  return {
+    ...baseStatus,
+    userPlan: user?.plan || 'free',
+    canUseExtension: user ? EntitlementService.canUseCompanionExtension(user.plan) : false,
+  };
+});
+
+ipcMain.handle('extension:registerHost', async (_event, extensionId?: string) => {
+  const user = await authRepo.getCurrentUser();
+  if (!user) throw new Error('Unauthenticated');
+  return ExtensionRegistrationService.registerHost(extensionId);
+});
+
+ipcMain.handle('extension:testEcho', async (_event, payload: any) => {
+  return ExtensionRegistrationService.testEcho(payload || { ping: true, timestamp: Date.now() });
 });
 
 // App lifecycle

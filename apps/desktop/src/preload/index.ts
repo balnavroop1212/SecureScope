@@ -70,6 +70,13 @@ const electronAPI = {
     exportPdf: (scanId: string): Promise<{ success: boolean; filePath?: string; error?: string }> =>
       ipcRenderer.invoke('reports:exportPdf', scanId),
   },
+  extension: {
+    getStatus: (): Promise<any> => ipcRenderer.invoke('extension:getStatus'),
+    registerHost: (extensionId?: string): Promise<any> =>
+      ipcRenderer.invoke('extension:registerHost', extensionId),
+    testEcho: (payload: any): Promise<any> =>
+      ipcRenderer.invoke('extension:testEcho', payload),
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
