@@ -1,0 +1,45 @@
+# Node modules & dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production build outputs
+dist/
+dist-electron/
+release/
+out/
+build/
+
+# Local data & logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.tmp
+
+# Runtime data & sqlite databases
+*.db
+*.sqlite
+*.sqlite3
+data/
+userData/
+users.json
+
+# Environment variables & developer secrets
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
