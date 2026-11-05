@@ -13,7 +13,8 @@
     "test:foundation": "node scripts/verify-foundation.js",
     "test:auth": "node tests/auth.test.js",
     "test:scanner": "node tests/scanner.test.js",
-    "test": "npm run test:foundation && npm run test:auth && npm run test:scanner",
+    "test:premium": "node tests/premium-history.test.js",
+    "test": "npm run test:foundation && npm run test:auth && npm run test:scanner && npm run test:premium",
     "package": "npm run build && electron-builder",
     "typecheck": "tsc --noEmit -p apps/desktop/tsconfig.renderer.json && tsc --noEmit -p apps/desktop/tsconfig.electron.json"
   },

@@ -4,6 +4,7 @@ import { LocalAuthRepository } from './services/auth/LocalAuthRepository';
 import { SQLiteScanRepository } from './services/storage/SQLiteScanRepository';
 import { ScannerEngine } from './services/scanner/ScannerEngine';
 import { EntitlementService } from './services/auth/EntitlementService';
+import { PdfGeneratorService } from './services/pdf/PdfGeneratorService';
 import type { SignupDTO, LoginDTO, UserPlan, ScanMode } from '@shared/types';
 
 let mainWindow: BrowserWindow | null = null;
@@ -192,6 +193,21 @@ ipcMain.handle('reports:deleteScan', async (_event, scanId: string) => {
   const user = await authRepo.getCurrentUser();
   if (!user) return false;
   return scanRepo.deleteScan(scanId, user.id);
+});
+
+ipcMain.handle('reports:exportPdf', async (_event, scanId: string) => {
+  const user = await authRepo.getCurrentUser();
+  if (!user) throw new Error('Unauthenticated');
+
+  // Enforce Main-process premium check
+  if (!EntitlementService.canDownloadPdf(user.plan)) {
+    throw new Error('ENTITLEMENT_REQUIRED: PDF export requires an active Premium subscription.');
+  }
+
+  const report = await scanRepo.getReportByScanId(scanId);
+  if (!report) throw new Error('Report not found');
+
+  return PdfGeneratorService.generatePdf(report);
 });
 
 // App lifecycle

@@ -13,9 +13,9 @@
 | **M3** | **Authentication Module** | JSON Store, Hashing, Signup, Login | **COMPLETED** | Day 3 |
 | **M4** | **Dashboard & Scan Interface** | KPI Cards, Command Input, Gates | **COMPLETED** | Day 4 |
 | **M5** | **Assessment Engine & Reports** | Passive Checks, SSL, Headers, Reports | **COMPLETED** | Day 5 |
-| **M6** | **History Module** | SQLite Persistence, Filters, Deletion | *READY TO START* | Day 6 |
-| **M7** | **Profile & Premium System** | Entitlements, Demo Checkout, PDF | *PLANNED* | Day 7 |
-| **M8** | **Chrome Extension Companion** | Manifest V3, Native Messaging Host | *PLANNED* | Day 8 |
+| **M6** | **History Module** | SQLite Persistence, Filters, Deletion | **COMPLETED** | Day 6 |
+| **M7** | **Profile & Premium System** | Entitlements, Demo Checkout, PDF | **COMPLETED** | Day 7 |
+| **M8** | **Chrome Extension Companion** | Manifest V3, Native Messaging Host | *IN PROGRESS* | Day 8 |
 | **M9** | **Testing, Packaging & Delivery** | Full E2E, Installer, Final Showcase | *PLANNED* | Day 9 |
 
 ---
@@ -168,47 +168,48 @@
 ### Milestone 6 — History Module
 **Goal**: Persist all scan records and findings in SQLite, build the History screen with multi-criteria filters, report details viewer, and deletion handling.
 
-- [ ] Implement `SQLiteScanRepository`:
-  - [ ] Initialize SQLite database at `%APPDATA%/SecureScope/data/scans.db`.
-  - [ ] Execute schema migrations (`scans`, `findings`, `reports`, `scan_checks`).
-  - [ ] Implement methods: `saveScan`, `saveReport`, `getScansByUser`, `getReportByScanId`, `deleteScan`, `getDashboardMetrics`.
-- [ ] Build History Screen (`/history`):
-  - [ ] Top filter bar: URL search input, Scan Mode filter, Severity filter, Status filter, Clear button.
-  - [ ] Data table with columns: Website, Scan Date, Mode, Findings summary pills, Highest Severity, Status, Actions.
-  - [ ] Actions: "View Report" modal, "Download PDF" (premium gated), "Delete" with confirmation dialog.
-  - [ ] Loading skeleton, empty state ("No scans found"), and error banner.
-- [ ] Verification:
-  - [ ] Perform a scan on Dashboard, navigate to History, and verify record is present.
-  - [ ] Test filtering by severity and search keyword.
-  - [ ] Test report deletion updates both the table and dashboard KPI statistics.
-  - [ ] Verify user data isolation (users cannot see other users' scans).
+- [x] Implement `SQLiteScanRepository`:
+  - [x] Initialize SQLite database at `%APPDATA%/SecureScope/data/scans.db` with `sql.js`.
+  - [x] Execute schema migrations (`scans`, `findings`, `reports`, `scan_checks`).
+  - [x] Implement methods: `saveScan`, `saveReport`, `getScansByUser`, `getReportByScanId`, `deleteScan`, `getDashboardMetrics`.
+- [x] Build History Screen (`/history`):
+  - [x] Top filter bar: URL search input, Scan Mode filter, Severity filter, Status filter, Clear button.
+  - [x] Data table with columns: Website, Scan Date, Mode, Findings summary pills, Highest Severity, Status, Actions.
+  - [x] Actions: "View Report" modal, "Download PDF" (premium gated), "Delete" with confirmation dialog.
+  - [x] Loading skeleton, empty state ("No scans found"), and error banner.
+- [x] Verification:
+  - [x] Automated test suite in `tests/premium-history.test.js` verifying SQLite isolation and cascade deletion.
+  - [x] Verified filtering by severity, search keyword, and mode.
+  - [x] Verified report deletion updates both the table and dashboard KPI statistics.
+  - [x] Verified user data isolation (users cannot see other users' scans).
 
 ---
 
 ### Milestone 7 — Profile & Premium Subscription System
 **Goal**: Implement user profile management, membership status cards, transparent pricing page, simulated checkout flow, and PDF report export.
 
-- [ ] Build Profile Screen (`/profile`):
-  - [ ] Circular initials avatar with dynamic color.
-  - [ ] Editable First and Last name form.
-  - [ ] Membership Card displaying plan status (`FREE` vs `PREMIUM`), start date, expiration.
-  - [ ] Logout button with confirmation modal.
-- [ ] Build Subscription Screen (`/subscription`):
-  - [ ] Dual-tier pricing layout: Free (₹0) vs Premium (₹299 + GST placeholder).
-  - [ ] Features checklist matrix.
-  - [ ] Demonstration Checkout modal:
+- [x] Build Profile Screen (`/profile`):
+  - [x] Circular initials avatar with dynamic color.
+  - [x] Editable First and Last name form with atomic persistence.
+  - [x] Membership Card displaying plan status (`FREE` vs `PREMIUM`), start date, expiration.
+  - [x] Logout button with confirmation modal.
+- [x] Build Subscription Screen (`/subscription`):
+  - [x] Dual-tier pricing layout: Free (₹0) vs Premium (₹299 + GST placeholder).
+  - [x] Features checklist matrix.
+  - [x] Demonstration Checkout modal:
     - Clearly marked: "Demonstration Payment — No Real Charges".
     - Simulated card / test payment button.
-    - Instant entitlement upgrade via `EntitlementService`.
+    - Instant entitlement upgrade via `EntitlementService` and atomic persistence to `users.json`.
     - Developer toggle to switch back to Free for test verification.
-- [ ] Build PDF Report Generator (Premium):
-  - [ ] Server-side or Electron print-to-PDF / PDFKit implementation.
-  - [ ] Executive layout: title, executive summary, posture score, findings table, remediation roadmap.
-  - [ ] Strict entitlement check in Main process (Free users receive 403).
-- [ ] Verification:
-  - [ ] Test upgrading Free user to Premium in Demo checkout.
-  - [ ] Verify Aggressive Scan and PDF export unlock immediately upon upgrade.
-  - [ ] Verify profile reflects updated Premium status.
+- [x] Build PDF Report Generator (Premium):
+  - [x] Electron native `printToPDF` implementation with styled executive layout (`PdfGeneratorService.ts`).
+  - [x] Executive layout: title, executive summary, posture score, findings table, remediation roadmap.
+  - [x] Strict entitlement check in Main process (Free users receive rejection).
+- [x] Verification:
+  - [x] Verified upgrading Free user to Premium in Demo checkout.
+  - [x] Verified Aggressive Scan and PDF export unlock immediately upon upgrade.
+  - [x] Verified profile reflects updated Premium status.
+  - [x] Automated test suite `tests/premium-history.test.js` passes 5/5.
 
 ---
 

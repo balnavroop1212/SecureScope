@@ -27,3 +27,4 @@ export class EntitlementService {
     return plan === 'premium';
   }
 }
+

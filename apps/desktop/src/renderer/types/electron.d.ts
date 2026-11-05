@@ -35,6 +35,7 @@ declare global {
         getHistory: () => Promise<ScanRecord[]>;
         getReport: (scanId: string) => Promise<ScanReport | null>;
         deleteScan: (scanId: string) => Promise<boolean>;
+        exportPdf: (scanId: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
       };
     };
   }

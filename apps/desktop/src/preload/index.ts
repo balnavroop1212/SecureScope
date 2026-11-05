@@ -67,6 +67,8 @@ const electronAPI = {
       ipcRenderer.invoke('reports:getReport', scanId),
     deleteScan: (scanId: string): Promise<boolean> =>
       ipcRenderer.invoke('reports:deleteScan', scanId),
+    exportPdf: (scanId: string): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+      ipcRenderer.invoke('reports:exportPdf', scanId),
   },
 };
 

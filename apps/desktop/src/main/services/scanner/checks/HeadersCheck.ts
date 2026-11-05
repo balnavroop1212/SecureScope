@@ -185,3 +185,4 @@ export class HeadersCheck {
     return { findings, checksCompleted, checksPassed };
   }
 }
+

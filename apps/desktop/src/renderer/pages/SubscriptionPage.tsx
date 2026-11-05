@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import {
   Check,
   Sparkles,
@@ -9,33 +8,48 @@ import {
   Puzzle,
   CreditCard,
   AlertCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-
-interface ContextType {
-  userPlan: 'free' | 'premium';
-  onPlanToggle?: () => void;
-}
+import { useAuth } from '../context/AuthContext';
 
 export const SubscriptionPage: React.FC = () => {
-  const { userPlan, onPlanToggle } = useOutletContext<ContextType>();
+  const { user, updatePlan } = useAuth();
+  const userPlan = user?.plan || 'free';
+
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [successToast, setSuccessToast] = useState(false);
 
-  const handleSimulatedUpgrade = () => {
+  const handleSimulatedUpgrade = async () => {
     setIsSimulating(true);
-    setTimeout(() => {
-      setIsSimulating(false);
-      setCheckoutModalOpen(false);
-      onPlanToggle?.();
-    }, 1200);
+    await new Promise((r) => setTimeout(r, 1000));
+    await updatePlan('premium');
+    setIsSimulating(false);
+    setCheckoutModalOpen(false);
+    setSuccessToast(true);
+    setTimeout(() => setSuccessToast(false), 4000);
+  };
+
+  const handleDowngrade = async () => {
+    await updatePlan('free');
   };
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12 animate-in fade-in duration-300">
+      {/* Success Notification Banner */}
+      {successToast && (
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3 text-xs text-emerald-400 font-mono animate-in fade-in">
+          <ShieldCheck className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <strong>Upgrade Successful!</strong> Your account now possesses SecureScope Pro entitlements (Aggressive scan, Private scan, PDF report exports, companion extension).
+          </div>
+        </div>
+      )}
+
       {/* Title Header */}
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-textMain tracking-tight">
@@ -98,8 +112,8 @@ export const SubscriptionPage: React.FC = () => {
                 Current Active Plan
               </Button>
             ) : (
-              <Button variant="secondary" size="md" className="w-full" onClick={onPlanToggle}>
-                Switch to Free Tier (Demo Toggle)
+              <Button variant="secondary" size="md" className="w-full" onClick={handleDowngrade}>
+                Switch to Free Tier (Developer Toggle)
               </Button>
             )}
           </div>

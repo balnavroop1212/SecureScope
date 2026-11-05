@@ -107,3 +107,4 @@ export class CookiesCheck {
     return { findings, checksCompleted, checksPassed };
   }
 }
+

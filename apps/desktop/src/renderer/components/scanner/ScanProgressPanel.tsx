@@ -125,3 +125,4 @@ export const ScanProgressPanel: React.FC<ScanProgressPanelProps> = ({
     </Card>
   );
 };
+

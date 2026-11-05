@@ -82,3 +82,4 @@ export class InfoDisclosureCheck {
     return { findings, checksCompleted, checksPassed };
   }
 }
+

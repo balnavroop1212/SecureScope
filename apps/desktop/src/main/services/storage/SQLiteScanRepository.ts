@@ -418,3 +418,4 @@ export class SQLiteScanRepository implements IScanRepository {
     await fs.promises.rename(tmpPath, this.dbFilePath);
   }
 }
+
