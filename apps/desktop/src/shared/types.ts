@@ -142,3 +142,4 @@ export interface ExtensionConnectionStatus {
   extensionId?: string;
   lastHeartbeat?: string;
 }
+

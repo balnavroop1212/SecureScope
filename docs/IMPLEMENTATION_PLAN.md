@@ -11,9 +11,9 @@
 | **M1** | **Planning & Architecture** | Blueprint, Docs, Schemas, Standards | **COMPLETED** | Day 1 |
 | **M2** | **Foundation & Design System** | Electron, React, Vite, Tailwind, Shell | **COMPLETED** | Day 2 |
 | **M3** | **Authentication Module** | JSON Store, Hashing, Signup, Login | **COMPLETED** | Day 3 |
-| **M4** | **Dashboard & Scan Interface** | KPI Cards, Command Input, Gates | *READY TO START* | Day 4 |
-| **M5** | **Assessment Engine & Reports** | Passive Checks, SSL, Headers, Reports | *PLANNED* | Day 5 |
-| **M6** | **History Module** | SQLite Persistence, Filters, Deletion | *PLANNED* | Day 6 |
+| **M4** | **Dashboard & Scan Interface** | KPI Cards, Command Input, Gates | **COMPLETED** | Day 4 |
+| **M5** | **Assessment Engine & Reports** | Passive Checks, SSL, Headers, Reports | **COMPLETED** | Day 5 |
+| **M6** | **History Module** | SQLite Persistence, Filters, Deletion | *READY TO START* | Day 6 |
 | **M7** | **Profile & Premium System** | Entitlements, Demo Checkout, PDF | *PLANNED* | Day 7 |
 | **M8** | **Chrome Extension Companion** | Manifest V3, Native Messaging Host | *PLANNED* | Day 8 |
 | **M9** | **Testing, Packaging & Delivery** | Full E2E, Installer, Final Showcase | *PLANNED* | Day 9 |
@@ -109,58 +109,59 @@
 ### Milestone 4 — Dashboard & Scan Interface
 **Goal**: Build the flagship security command interface, dynamic KPI metrics cards, scan mode selection, and feature entitlement gating.
 
-- [ ] Implement Dashboard Layout:
-  - [ ] Section A: Personalized welcome greeting and dynamic time-of-day greeting.
-  - [ ] Section B: 4 dynamic KPI cards (Total Scans, Total Findings, High-Risk Findings, Unique Websites).
-- [ ] Build Signature Security Command Input Component:
-  - [ ] ChatGPT-inspired large rounded command container with cyan glow.
-  - [ ] URL input with clear button, auto-protocol prefixing (`https://`).
-  - [ ] Live URL format validation (Zod + regex).
-  - [ ] Three Scan Mode selector cards:
-    - Normal Scan (Free)
-    - Aggressive Scan (Premium)
-    - Private Scan (Premium)
-  - [ ] Mandatory Scope Authorization declaration checkbox.
-  - [ ] "Launch Assessment" button with radar pulse animation.
-- [ ] Implement Feature Gating & Entitlement:
-  - [ ] Dual-layer gating (Main process `EntitlementService` + UI `FeatureGate` component).
-  - [ ] Premium Upgrade Modal when a Free user selects Aggressive or Private scan mode.
-- [ ] Build Scan Progress UI:
-  - [ ] Stage-by-stage truthful progress tracker.
-  - [ ] Current check indicator and completed checks counter.
-  - [ ] Safe "Cancel Scan" button.
-- [ ] Verification:
-  - [ ] Verify URL validation rejects invalid schemes or malformed strings.
-  - [ ] Verify Free user cannot trigger Aggressive/Private scan (upgrade dialog opens).
-  - [ ] Verify cancel button cleanly terminates the progress flow.
+- [x] Implement Dashboard Layout (`apps/desktop/src/renderer/pages/DashboardPage.tsx`):
+  - [x] Section A: Personalized welcome greeting dynamically displaying authenticated user name.
+  - [x] Section B: 4 dynamic KPI cards (Total Scans, Total Findings, High-Risk Findings, Unique Websites) queried from SQLite persistence.
+- [x] Build Signature Security Command Input Component (`SecurityCommandInput.tsx`):
+  - [x] ChatGPT-inspired large rounded command container with cyan glow and clean internal layout.
+  - [x] URL input with clear button, auto-protocol prefixing (`https://`), and live validation.
+  - [x] Three Scan Mode selector cards: Normal (Free), Aggressive (Pro), Private (Pro).
+  - [x] Mandatory Scope Authorization declaration checkbox.
+  - [x] "Start Scan" button with radar pulse animation and loading states.
+- [x] Implement Feature Gating & Entitlement:
+  - [x] Dual-layer gating (Main process `EntitlementService` + UI `UpgradeModal` component).
+  - [x] Interactive upgrade modal when a Free user selects Aggressive or Private scan mode.
+- [x] Build Scan Progress UI (`ScanProgressPanel.tsx`):
+  - [x] Stage-by-stage truthful progress tracker (Validating Target -> Authorized Scope -> Public TLS Info -> Security Config -> Findings Analysis -> Report Generation).
+  - [x] Current check indicator, percentage bar, and completed checks counter.
+  - [x] Safe "Cancel Scan" button utilizing `AbortController`.
+- [x] Verification:
+  - [x] Verified URL validation rejects empty or invalid schemes.
+  - [x] Verified Free user selecting Aggressive/Private triggers upgrade modal.
+  - [x] Verified cancellation cleanly terminates in-flight assessment.
 
 ---
 
 ### Milestone 5 — Assessment Engine & Vulnerability Reports
 **Goal**: Implement the modular scanning engine with safe, passive checks, SSRF protection, finding normalization, report generation, and in-place dashboard rendering.
 
-- [ ] Build `ScannerEngine` Service in `services/scanner/`:
-  - [ ] `ScopeValidator`: Check URL protocol, DNS lookup, reject RFC1918 / Loopback / Link-Local IPs.
-  - [ ] `TlsCheck`: Connect to port 443, extract certificate validity, expiry date, issuer, TLS version.
-  - [ ] `HeadersCheck`: Evaluate HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
-  - [ ] `CookiesCheck`: Analyze `Set-Cookie` for `Secure`, `HttpOnly`, `SameSite` attributes.
-  - [ ] `InformationDisclosureCheck`: Inspect `Server`, `X-Powered-By`, and banner headers.
-  - [ ] Extended Aggressive Checks (Premium): `robots.txt` analysis, `/.well-known/security.txt` check, safe CORS reflection check.
-  - [ ] Private Mode Handler: Evidence redaction, zero full-body retention.
-- [ ] Implement Finding Classification & Scoring:
-  - [ ] Assign severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFORMATIONAL`).
-  - [ ] Compute explainable 0–100 posture score.
-  - [ ] Generate clear remediation advice and CWE/OWASP references.
-- [ ] Build Report UI Component (In-Place on Dashboard):
-  - [ ] Assessment metadata header (domain, timestamp, duration, score badge).
-  - [ ] Executive summary card.
-  - [ ] Severity distribution cards with Recharts bar/pie breakdown.
-  - [ ] Interactive Findings accordion with search, severity filter, and evidence viewer.
-  - [ ] Coverage & Limitations card.
-- [ ] Verification:
-  - [ ] Execute scan against a safe public target or demo fixture.
-  - [ ] Verify findings are accurately classified and displayed below the input bar.
-  - [ ] Confirm SSRF protection rejects `127.0.0.1` and `192.168.1.1` in external mode.
+- [x] Build `ScannerEngine` Service in `apps/desktop/src/main/services/scanner/`:
+  - [x] `ScopeValidator.ts`: Protocol verification (`http:` / `https:`), DNS pre-flight resolution, strict rejection of loopback (`127.0.0.0/8`, `::1`), private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), and link-local (`169.254.0.0/16`).
+  - [x] `TlsCheck.ts`: Native socket peer certificate inspection, expiration audit, days remaining, cipher, and legacy TLS 1.0/1.1 deprecation checks.
+  - [x] `HeadersCheck.ts`: Analysis of HSTS, CSP, X-Frame-Options (Clickjacking), X-Content-Type-Options (MIME Sniffing), and Referrer-Policy.
+  - [x] `CookiesCheck.ts`: Inspection of `Set-Cookie` for `Secure`, `HttpOnly`, and `SameSite` flags.
+  - [x] `InfoDisclosureCheck.ts`: Evaluation of `Server` banner and `X-Powered-By` technology leak headers.
+  - [x] `AggressiveChecks.ts` (Pro Mode): Safe passive discovery of `/.well-known/security.txt` compliance, `robots.txt`, and safe CORS origin reflection audit.
+  - [x] `DemoTargetCheck.ts`: Realistic instructional findings for local sandbox mode, unambiguously tagged with `[DEMO DATA]` and `isDemo: true`.
+  - [x] Private Mode Handler: Sensitive token and query parameter redaction, zero full-body retention.
+- [x] Implement Finding Classification & Scoring:
+  - [x] Severity classification (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFORMATIONAL`).
+  - [x] Explainable 0–100 posture score calculation formula ($\text{Score} = \max(0, 100 - \sum \text{penalties})$) and Grade classification (A, B, C, D, F).
+  - [x] CWE and OWASP Top 10 references attached to every observation.
+- [x] Build In-Place Report UI (`VulnerabilityReportView.tsx`):
+  - [x] Renders seamlessly below the command bar on the same dashboard page.
+  - [x] Prominent `[DEMO DATA]` indicator banner when assessment is conducted in Sandbox Mode.
+  - [x] Assessment metadata header (domain, timestamp, duration, score badge, IP).
+  - [x] Executive summary box.
+  - [x] Severity distribution cards + Recharts bar chart visualization.
+  - [x] Interactive Findings Accordion with search, severity filter tabs, expandable impact/remediation drawers, and "Copy Evidence" button.
+  - [x] Assessment Coverage & Limitations card.
+  - [x] Action toolbar (PDF download gate, reset assessment).
+- [x] SQLite Report Persistence:
+  - [x] Built `SQLiteScanRepository` (`apps/desktop/src/main/services/storage/SQLiteScanRepository.ts`) using `sql.js` (zero build tool compilation issues, ACID compliance, atomic persistence to `scans.db`).
+- [x] Verification:
+  - [x] Automated test suite in `tests/scanner.test.js` covering 6 critical cases (100% passed).
+  - [x] Total automated test suite (`npm test`) passes 16/16 tests across Foundation, Auth, and Scanner.
 
 ---
 

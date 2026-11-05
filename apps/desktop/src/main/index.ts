@@ -1,10 +1,15 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { LocalAuthRepository } from './services/auth/LocalAuthRepository';
-import type { SignupDTO, LoginDTO, UserPlan } from '@shared/types';
+import { SQLiteScanRepository } from './services/storage/SQLiteScanRepository';
+import { ScannerEngine } from './services/scanner/ScannerEngine';
+import { EntitlementService } from './services/auth/EntitlementService';
+import type { SignupDTO, LoginDTO, UserPlan, ScanMode } from '@shared/types';
 
 let mainWindow: BrowserWindow | null = null;
 const authRepo = new LocalAuthRepository();
+const scanRepo = new SQLiteScanRepository();
+const scannerEngine = new ScannerEngine(scanRepo);
 
 const isDev =
   (process.env.NODE_ENV === 'development' || !app.isPackaged) &&
@@ -121,6 +126,72 @@ ipcMain.handle('auth:updatePlan', async (_event, plan: UserPlan) => {
 
 ipcMain.handle('auth:logout', async () => {
   await authRepo.clearSession();
+});
+
+// Scanner IPC handlers
+ipcMain.handle(
+  'scanner:startScan',
+  async (
+    _event,
+    data: {
+      url: string;
+      scanMode: ScanMode;
+      authorizedScopeConfirmed: boolean;
+      isDemoMode?: boolean;
+    }
+  ) => {
+    const user = await authRepo.getCurrentUser();
+    if (!user) throw new Error('Unauthenticated');
+
+    // Dual-layer Feature Gating: Main process independent verification
+    if (!EntitlementService.canExecuteScanMode(user.plan, data.scanMode)) {
+      throw new Error(
+        `ENTITLEMENT_REQUIRED: Mode "${data.scanMode}" requires an active Premium subscription.`
+      );
+    }
+
+    return scannerEngine.startScan({
+      userId: user.id,
+      url: data.url,
+      scanMode: data.scanMode,
+      authorizedScopeConfirmed: data.authorizedScopeConfirmed,
+      isDemoMode: data.isDemoMode,
+      onProgress: (progress) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('scanner:progress', progress);
+        }
+      },
+    });
+  }
+);
+
+ipcMain.handle('scanner:cancelScan', async (_event, scanId: string) => {
+  return scannerEngine.cancelScan(scanId);
+});
+
+// Reports IPC handlers
+ipcMain.handle('reports:getDashboardMetrics', async () => {
+  const user = await authRepo.getCurrentUser();
+  if (!user) return { totalScans: 0, totalFindings: 0, highRiskFindings: 0, uniqueWebsites: 0 };
+  return scanRepo.getDashboardMetrics(user.id);
+});
+
+ipcMain.handle('reports:getHistory', async () => {
+  const user = await authRepo.getCurrentUser();
+  if (!user) return [];
+  return scanRepo.getScansByUser(user.id);
+});
+
+ipcMain.handle('reports:getReport', async (_event, scanId: string) => {
+  const user = await authRepo.getCurrentUser();
+  if (!user) return null;
+  return scanRepo.getReportByScanId(scanId);
+});
+
+ipcMain.handle('reports:deleteScan', async (_event, scanId: string) => {
+  const user = await authRepo.getCurrentUser();
+  if (!user) return false;
+  return scanRepo.deleteScan(scanId, user.id);
 });
 
 // App lifecycle

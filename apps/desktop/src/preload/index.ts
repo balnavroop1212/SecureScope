@@ -1,10 +1,15 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import type {
   SignupDTO,
   LoginDTO,
   AuthResponse,
   User,
   UserPlan,
+  ScanMode,
+  ScanReport,
+  ScanRecord,
+  ScanProgressEvent,
+  DashboardMetrics,
 } from '@shared/types';
 
 export interface ElectronAppInfo {
@@ -12,6 +17,13 @@ export interface ElectronAppInfo {
   version: string;
   platform: string;
   isPackaged: boolean;
+}
+
+export interface StartScanIPCRequest {
+  url: string;
+  scanMode: ScanMode;
+  authorizedScopeConfirmed: boolean;
+  isDemoMode?: boolean;
 }
 
 const electronAPI = {
@@ -30,6 +42,31 @@ const electronAPI = {
     updatePlan: (plan: UserPlan): Promise<User> =>
       ipcRenderer.invoke('auth:updatePlan', plan),
     logout: (): Promise<void> => ipcRenderer.invoke('auth:logout'),
+  },
+  scanner: {
+    startScan: (data: StartScanIPCRequest): Promise<ScanReport> =>
+      ipcRenderer.invoke('scanner:startScan', data),
+    cancelScan: (scanId: string): Promise<boolean> =>
+      ipcRenderer.invoke('scanner:cancelScan', scanId),
+    onProgress: (callback: (progress: ScanProgressEvent) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, progress: ScanProgressEvent) => {
+        callback(progress);
+      };
+      ipcRenderer.on('scanner:progress', listener);
+      return () => {
+        ipcRenderer.removeListener('scanner:progress', listener);
+      };
+    },
+  },
+  reports: {
+    getDashboardMetrics: (): Promise<DashboardMetrics> =>
+      ipcRenderer.invoke('reports:getDashboardMetrics'),
+    getHistory: (): Promise<ScanRecord[]> =>
+      ipcRenderer.invoke('reports:getHistory'),
+    getReport: (scanId: string): Promise<ScanReport | null> =>
+      ipcRenderer.invoke('reports:getReport', scanId),
+    deleteScan: (scanId: string): Promise<boolean> =>
+      ipcRenderer.invoke('reports:deleteScan', scanId),
   },
 };
 

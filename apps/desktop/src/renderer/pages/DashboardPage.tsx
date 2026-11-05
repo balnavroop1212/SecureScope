@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   Radar,
@@ -6,15 +6,16 @@ import {
   ShieldAlert,
   Globe,
   Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  Lock,
+  AlertCircle,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import { SecurityCommandInput } from '../components/scanner/SecurityCommandInput';
+import { ScanProgressPanel } from '../components/scanner/ScanProgressPanel';
+import { VulnerabilityReportView } from '../components/scanner/VulnerabilityReportView';
+import { ScanMode, ScanReport, ScanProgressEvent, DashboardMetrics } from '@shared/types';
 
 interface ContextType {
   isDemoMode: boolean;
@@ -27,8 +28,98 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Metrics State
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    totalScans: 0,
+    totalFindings: 0,
+    highRiskFindings: 0,
+    uniqueWebsites: 0,
+  });
+
+  // Scanner State
+  const [isScanning, setIsScanning] = useState(false);
+  const [currentProgress, setCurrentProgress] = useState<ScanProgressEvent | null>(null);
+  const [activeReport, setActiveReport] = useState<ScanReport | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [currentScanTarget, setCurrentScanTarget] = useState<string>('');
+  const [currentScanMode, setCurrentScanMode] = useState<ScanMode>('normal');
+
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  // Load KPI Metrics
+  const loadMetrics = async () => {
+    try {
+      if (window.electronAPI?.reports) {
+        const data = await window.electronAPI.reports.getDashboardMetrics();
+        setMetrics(data);
+      }
+    } catch (err) {
+      console.error('[Dashboard] Failed to load metrics:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadMetrics();
+  }, [user]);
+
+  // Subscribe to real-time progress events
+  useEffect(() => {
+    if (window.electronAPI?.scanner) {
+      const unsubscribe = window.electronAPI.scanner.onProgress((prog) => {
+        setCurrentProgress(prog);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
+
+  const handleStartScan = async (targetUrl: string, mode: ScanMode, authorized: boolean) => {
+    setScanError(null);
+    setActiveReport(null);
+    setCurrentProgress(null);
+    setIsScanning(true);
+    setCurrentScanTarget(targetUrl);
+    setCurrentScanMode(mode);
+
+    try {
+      const report = await window.electronAPI.scanner.startScan({
+        url: targetUrl,
+        scanMode: mode,
+        authorizedScopeConfirmed: authorized,
+        isDemoMode,
+      });
+
+      setActiveReport(report);
+      setIsScanning(false);
+      loadMetrics(); // dynamically refresh KPI cards
+
+      // Smooth scroll to report
+      setTimeout(() => {
+        reportRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (err: any) {
+      setScanError(err.message || 'An error occurred during assessment.');
+      setIsScanning(false);
+    }
+  };
+
+  const handleCancelScan = async () => {
+    if (currentProgress?.scanId) {
+      await window.electronAPI.scanner.cancelScan(currentProgress.scanId);
+    }
+    setIsScanning(false);
+    setCurrentProgress(null);
+    setScanError('Assessment cancelled by user.');
+  };
+
+  const handleResetScan = () => {
+    setActiveReport(null);
+    setCurrentProgress(null);
+    setScanError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12 animate-in fade-in duration-300">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16 animate-in fade-in duration-300">
       {/* SECTION A: Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-graphite via-graphite-card to-graphite border border-slateBorder shadow-lg">
         <div>
@@ -66,7 +157,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION B: Dynamic Statistics KPI Cards */}
+      {/* SECTION B: Dynamic Statistics KPI Cards (Calculated from saved SQLite reports) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Scans */}
         <Card className="p-5 relative overflow-hidden group hover:border-cyanBrand/40 transition-colors">
@@ -79,8 +170,12 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-mono font-bold text-textMain">0</span>
-            <p className="mt-1 text-xs text-textMuted">No scans recorded yet</p>
+            <span className="text-3xl font-mono font-bold text-textMain">
+              {metrics.totalScans}
+            </span>
+            <p className="mt-1 text-xs text-textMuted">
+              {metrics.totalScans === 0 ? 'No scans recorded yet' : 'Completed evaluations'}
+            </p>
           </div>
           <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-cyanBrand/5 rounded-full blur-xl pointer-events-none group-hover:bg-cyanBrand/10 transition-colors" />
         </Card>
@@ -96,8 +191,10 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-mono font-bold text-textMain">0</span>
-            <p className="mt-1 text-xs text-textMuted">Discovered issues</p>
+            <span className="text-3xl font-mono font-bold text-textMain">
+              {metrics.totalFindings}
+            </span>
+            <p className="mt-1 text-xs text-textMuted">Discovered observations</p>
           </div>
           <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-amber-500/10 transition-colors" />
         </Card>
@@ -113,7 +210,9 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-mono font-bold text-textMain">0</span>
+            <span className="text-3xl font-mono font-bold text-textMain">
+              {metrics.highRiskFindings}
+            </span>
             <p className="mt-1 text-xs text-textMuted">Critical & High severity</p>
           </div>
           <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-red-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-red-500/10 transition-colors" />
@@ -130,104 +229,54 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-mono font-bold text-textMain">0</span>
+            <span className="text-3xl font-mono font-bold text-textMain">
+              {metrics.uniqueWebsites}
+            </span>
             <p className="mt-1 text-xs text-textMuted">Unique domains</p>
           </div>
           <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-cyanBrand/5 rounded-full blur-xl pointer-events-none group-hover:bg-cyanBrand/10 transition-colors" />
         </Card>
       </div>
 
-      {/* SECTION C: Signature Security Command Input Area (Milestone 2 Foundation Preview) */}
-      <Card variant="glass" className="p-8 border-slateBorder/90 shadow-2xl relative overflow-hidden">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyanBrand/10 border border-cyanBrand/30 text-cyanBrand text-xs font-mono mb-2">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Non-Destructive Assessment Console</span>
-            </div>
-            <h3 className="text-xl font-bold text-textMain tracking-tight">
-              Initiate Website Security Assessment
-            </h3>
-            <p className="text-sm text-textMuted">
-              Enter any publicly accessible or authorized web domain to evaluate its security architecture.
-            </p>
-          </div>
-
-          {/* Large Command-style Input */}
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyanBrand/30 to-violetBrand/30 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-300" />
-            <div className="relative flex items-center bg-obsidian-900 border border-slateBorder rounded-xl p-2 gap-3 shadow-inner">
-              <div className="pl-3 font-mono text-sm text-cyanBrand font-semibold select-none">
-                URL &gt;
-              </div>
-              <input
-                type="text"
-                disabled
-                placeholder={isDemoMode ? "http://localhost:8000 (Sandbox Mode Enabled)" : "https://yourdomain.com"}
-                className="w-full bg-transparent border-none text-textMain font-mono text-sm focus:outline-none placeholder-textMuted/50 cursor-not-allowed"
-              />
-              <Button
-                variant="primary"
-                size="md"
-                disabled
-                className="whitespace-nowrap font-mono text-xs opacity-80"
-                icon={<ArrowRight className="w-4 h-4" />}
-              >
-                Scan Target
-              </Button>
-            </div>
-          </div>
-
-          {/* Mode Selector Preview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-            <div className="p-4 rounded-xl bg-graphite/60 border border-cyanBrand/40 shadow-cyan-glow relative">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold text-textMain flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyanBrand" />
-                  Normal Scan
-                </span>
-                <Badge variant="free">Free</Badge>
-              </div>
-              <p className="text-[11px] text-textMuted">
-                Safe passive configuration checks, TLS validation, security headers, cookie flags.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-graphite/40 border border-slateBorder relative opacity-75">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold text-textMain flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  Aggressive Scan
-                </span>
-                <Badge variant="premium">Pro</Badge>
-              </div>
-              <p className="text-[11px] text-textMuted">
-                Extended non-destructive probes: CORS audit, robots.txt, security.txt compliance.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-graphite/40 border border-slateBorder relative opacity-75">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-semibold text-textMain flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-violetBrand" />
-                  Private Scan
-                </span>
-                <Badge variant="premium">Pro</Badge>
-              </div>
-              <p className="text-[11px] text-textMuted">
-                Evidence minimization, sensitive header sanitization, zero response retention.
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-[11px] font-mono text-textMuted">
-              Architecture & UI Foundation verified. Full scanning engine connects in Milestone 5.
-            </p>
+      {/* Error Alert Banner */}
+      {scanError && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-xs text-red-400 animate-in fade-in">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold">Assessment Halted</p>
+            <p className="text-textMuted leading-relaxed">{scanError}</p>
           </div>
         </div>
-      </Card>
+      )}
+
+      {/* SECTION C: Signature Security Command Input Area */}
+      <SecurityCommandInput
+        userPlan={userPlan}
+        isDemoMode={isDemoMode}
+        isScanning={isScanning}
+        onStartScan={handleStartScan}
+      />
+
+      {/* Scan Progress State */}
+      {isScanning && (
+        <ScanProgressPanel
+          targetUrl={currentScanTarget}
+          scanMode={currentScanMode}
+          progress={currentProgress}
+          onCancelScan={handleCancelScan}
+        />
+      )}
+
+      {/* In-Place Comprehensive Vulnerability Report */}
+      {activeReport && (
+        <div ref={reportRef}>
+          <VulnerabilityReportView
+            report={activeReport}
+            userPlan={userPlan}
+            onResetScan={handleResetScan}
+          />
+        </div>
+      )}
     </div>
   );
 };
-
